@@ -1,19 +1,26 @@
 <?php
+function logToFile($msg)
+{
+    $fd = fopen("/tmp/php.log", "a");
+    $bt = debug_backtrace();
+    $caller = array_shift($bt);
+    $ln = $caller['file']."-".$caller['line'].":"; 
+    fwrite($fd, $ln.$msg . "\n");
+    fclose($fd);
+}
 
 require 'Slim/Slim.php';
+\Slim\Slim::registerAutoloader();
 
-$app = new Slim();
+logToFile("2");
+$app = new \Slim\Slim();
+$app->config('debug', true);
+$app->get('/hi/:name', function ($name) {
+    echo "ciao, " . $name;
+});
 
-$app->get('/wines', 'getWines');
-$app->get('/wines/:id',	'getWine');
-$app->get('/wines/search/:query', 'findByName');
-$app->post('/wines', 'addWine');
-$app->put('/wines/:id', 'updateWine');
-$app->delete('/wines/:id',	'deleteWine');
-
-$app->run();
-
-function getWines() {
+$app->get('/wines', function () {
+    logToFile("2");
 	$sql = "select * FROM wine ORDER BY name";
 	try {
 		$db = getConnection();
@@ -25,7 +32,17 @@ function getWines() {
 		echo '{"error":{"text":'. $e->getMessage() .'}}'; 
 	}
 }
+);
 
+$app->get('/wines/:id',	'getWine');
+$app->get('/wines/search/:query', 'findByName');
+$app->post('/wines', 'addWine');
+$app->put('/wines/:id', 'updateWine');
+$app->delete('/wines/:id',	'deleteWine');
+
+$app->run();
+
+return;
 function getWine($id) {
 	$sql = "SELECT * FROM wine WHERE id=:id";
 	try {
@@ -120,7 +137,7 @@ function findByName($query) {
 function getConnection() {
 	$dbhost="127.0.0.1";
 	$dbuser="root";
-	$dbpass="";
+	$dbpass="11";
 	$dbname="cellar";
 	$dbh = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpass);	
 	$dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
